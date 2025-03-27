@@ -81,7 +81,7 @@ def get_georeferenced_polygons_from_image(path, mask_generator: SamAutomaticMask
 
 
 
-def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGenerator, color_type='nrg', grid_size=10, n_samples=None, random_seed=42):
+def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGenerator, color_type='nrg', grid_size=10, n_samples=None, random_seed=42, exclude_selections=None, use_existing_selections=False):
     """
     Process a tile using the provided mask generator.
     
@@ -92,6 +92,8 @@ def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGen
         grid_size: Number of tiles per row/column (default: 10)
         n_samples: Number of quadrants to randomly sample. If None, process all quadrants.
         random_seed: Random seed for reproducibility (only used if n_samples is not None)
+        exclude_selections: List of indices to exclude from selection
+        use_existing_selections: If True, will write results in a new directory
     """
     # Get the path to the color-specific directory
     color_dir = os.path.join(sentinel_path, color_type)
@@ -102,9 +104,19 @@ def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGen
     # Generate all possible quadrant combinations
     all_quadrants = [(row + 1, col + 1) for row in range(grid_size) for col in range(grid_size)]
     
+    # Remove excluded quadrants if any
+    if exclude_selections is not None:
+        available_indices = [i for i in range(len(all_quadrants)) if i not in exclude_selections]
+        if not available_indices:
+            print("No available quadrants after excluding previously selected ones")
+            return
+        all_quadrants = [all_quadrants[i] for i in available_indices]
+    
     # Select quadrants based on n_samples
     if n_samples is not None:
         np.random.seed(random_seed)
+        # Ensure we don't try to select more quadrants than available
+        n_samples = min(n_samples, len(all_quadrants))
         selected_quadrants = np.random.choice(len(all_quadrants), size=n_samples, replace=False)
         selected_quadrants = [all_quadrants[i] for i in selected_quadrants]
         print(f"Selected {n_samples} random quadrants: {selected_quadrants}")
@@ -133,13 +145,19 @@ def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGen
         print(f"No polygons found for {color_dir}. Skipping GeoDataFrame creation.")
         return
     
-    # Create output directories
-    shapefile_dir = os.path.join(color_dir, f"shapefiles_{grid_size}x{grid_size}")
+    # Create output directories with different names if using existing selections
+    if use_existing_selections:
+        shapefile_dir = os.path.join(color_dir, f"shapefiles_{grid_size}x{grid_size}_additional")
+        parquet_name = f"polygons_{grid_size}x{grid_size}_additional.parquet"
+    else:
+        shapefile_dir = os.path.join(color_dir, f"shapefiles_{grid_size}x{grid_size}")
+        parquet_name = f"polygons_{grid_size}x{grid_size}.parquet"
+    
     os.makedirs(shapefile_dir, exist_ok=True)
     
     # Save to Parquet
     gdf = gpd.GeoDataFrame(georeferenced_polygons, crs="EPSG:4326")
-    gdf.to_parquet(os.path.join(color_dir, f"polygons_{grid_size}x{grid_size}.parquet"))
+    gdf.to_parquet(os.path.join(color_dir, parquet_name))
     
     # Save to Shapefile
     output_shapefile = os.path.join(shapefile_dir, f"polygons_{grid_size}x{grid_size}.shp")

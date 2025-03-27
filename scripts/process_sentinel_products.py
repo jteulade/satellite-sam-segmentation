@@ -5,6 +5,7 @@ import glob
 from pathlib import Path
 import time
 from datetime import datetime
+import numpy as np
 
 # Add the project root directory to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -89,11 +90,15 @@ def is_preprocessing_done(quarter_dir):
     tiles_dir = os.path.join(quarter_dir, "nrg", "tiles_10x10")
     return os.path.exists(color_composite) and os.path.exists(tiles_dir)
 
-def is_sam_done(quarter_dir):
+def is_sam_done(quarter_dir, use_existing_selections=False):
     """Check if SAM segmentation has already been done."""
     # Check for SAM output files
-    parquet_file = os.path.join(quarter_dir, "nrg", "polygons_10x10.parquet")
-    shapefile_dir = os.path.join(quarter_dir, "nrg", "shapefiles_10x10")
+    if use_existing_selections:
+        parquet_file = os.path.join(quarter_dir, "nrg", "polygons_10x10_additional.parquet")
+        shapefile_dir = os.path.join(quarter_dir, "nrg", "shapefiles_10x10_additional")
+    else:
+        parquet_file = os.path.join(quarter_dir, "nrg", "polygons_10x10.parquet")
+        shapefile_dir = os.path.join(quarter_dir, "nrg", "shapefiles_10x10")
     return os.path.exists(parquet_file) and os.path.exists(shapefile_dir)
 
 def is_merging_done(tile_dir, quarter):
@@ -129,8 +134,15 @@ def setup_sam_model():
     
     return mask_generator
 
-def process_sentinel_products(base_dir, year, n_samples=None):
-    """Process all Sentinel products in the given directory."""
+def process_sentinel_products(base_dir, year, n_samples=None, use_existing_selections=False):
+    """Process all Sentinel products in the given directory.
+    
+    Args:
+        base_dir: Base directory containing Sentinel products
+        year: Year of the Sentinel products
+        n_samples: Number of quadrants to randomly sample
+        use_existing_selections: If True, will use existing quadrant selections from previous run
+    """
     total_start_time = time.time()
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting Sentinel products processing...")
     
@@ -169,22 +181,39 @@ def process_sentinel_products(base_dir, year, n_samples=None):
             
             # Step 2: SAM Segmentation
             step_start_time = time.time()
-            if is_sam_done(quarter_dir):
+            if is_sam_done(quarter_dir, use_existing_selections):
                 print("Step 2: SAM segmentation already done, skipping...")
             else:
                 print("Step 2: Running SAM segmentation...")
-                segment_satellite_imagery(quarter_dir, mask_generator, n_samples=n_samples, random_seed=sum(map(ord, tile_id)))
+                # Generate all possible quadrants
+                grid_size = 10
+                all_quadrants = [(row + 1, col + 1) for row in range(grid_size) for col in range(grid_size)]
+                
+                # Set up seed for reproducibility
+                seed = sum(map(ord, tile_id))
+                np.random.seed(seed)
+                
+                # Handle quadrant selection based on use_existing_selections parameter
+                if use_existing_selections:
+                    # Since we've only run once before, we know we processed n_samples quadrants
+                    n_previous_selections = n_samples
+                    previous_selections = np.random.choice(len(all_quadrants), size=n_previous_selections, replace=False)
+                    print(f"Using existing selections: {previous_selections}")
+                    segment_satellite_imagery(quarter_dir, mask_generator, n_samples=n_samples, random_seed=seed, exclude_selections=previous_selections, use_existing_selections=True)
+                else:
+                    print("Starting fresh selection of quadrants")
+                    segment_satellite_imagery(quarter_dir, mask_generator, n_samples=n_samples, random_seed=seed)
             print(f"SAM segmentation step completed in {time.time() - step_start_time:.2f} seconds")
             print(f"Quarter {quarter} processing completed in {time.time() - quarter_start_time:.2f} seconds")
         
         # Step 3: Merge polygons for this tile (all quarters)
-        step_start_time = time.time()
-        if is_merging_done(tile_dir, quarter):
-            print("Step 3: Polygon merging already done for this tile, skipping...")
-        else:
-            print("Step 3: Merging polygons for all quarters...")
-            merge_overlapping_segments(tile_dir, list(range(1, 5)), year)
-        print(f"Polygon merging step completed in {time.time() - step_start_time:.2f} seconds")
+        # step_start_time = time.time()
+        # if is_merging_done(tile_dir, quarter):
+        #     print("Step 3: Polygon merging already done for this tile, skipping...")
+        # else:
+        #     print("Step 3: Merging polygons for all quarters...")
+        #     merge_overlapping_segments(tile_dir, list(range(1, 5)), year)
+        # print(f"Polygon merging step completed in {time.time() - step_start_time:.2f} seconds")
         
         print(f"Tile {tile_id} processing completed in {time.time() - tile_start_time:.2f} seconds")
     
@@ -208,7 +237,8 @@ if __name__ == "__main__":
     unzip_sentinel_products(base_dir)
     
     # Then process all products with n_samples=10
-    process_sentinel_products(base_dir, year, n_samples=10)
+    # Set use_existing_selections=True to use existing quadrant selections
+    process_sentinel_products(base_dir, year, n_samples=20, use_existing_selections=True)
     
     total_script_time = time.time() - script_start_time
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script completed in {total_script_time:.2f} seconds ({total_script_time/3600:.2f} hours)") 
