@@ -10,7 +10,7 @@ def get_pixel_area(tile_path, quarters, year):
     # Get pixel area from any available quarter's B02.tif
     pixel_area = None
     for quarter in quarters:
-        b02_path = "/home/teulade/dataset_download/downloads/2023/39RUK/Sentinel-2_mosaic_2023_Q4_39RUK_0_0/B02.tif"
+        b02_path = os.path.join(tile_path, f"Sentinel-2_mosaic_{year}_Q{quarter}_{os.path.basename(tile_path)}_0_0", "B02.tif")
         if os.path.exists(b02_path):
             with rasterio.open(b02_path) as src:
                 transform = src.transform
@@ -92,7 +92,7 @@ def create_intersection_gdf(filtered_gdf):
     
     return intersection_gdf
 
-def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid_size=10, min_pixels=100):
+def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid_size=10):
     """
     Merge quarterly polygons for a single tile from a list of quarters.
     
@@ -102,7 +102,6 @@ def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid
         year: Year of the Sentinel data (e.g., 2023)
         color_type: Either 'rgb' for true color or 'nrg' for NIR-Red-Green
         grid_size: Grid size used for tiling (default: 10)
-        min_pixels: Minimum number of pixels for a segment to be kept (default: 100)
     """
     tile_id = os.path.basename(tile_path)
     print(f"\nProcessing tile {tile_id} for quarters: {quarters}")
@@ -137,8 +136,8 @@ def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid
     print(f"After merging, number of segments: {len(combined_gdf)}")
     
     # Filter and process polygons
-    filtered_gdf = combined_gdf[combined_gdf.geometry.area / pixel_area >= min_pixels]
-    print(f"After removing segments smaller than {min_pixels} pixels, number of segments: {len(filtered_gdf)}")
+    filtered_gdf = combined_gdf[combined_gdf.geometry.area / pixel_area >= 100]
+    print(f"After removing segments smaller than 100 pixels, number of segments: {len(filtered_gdf)}")
     
     filtered_gdf["area"] = filtered_gdf.geometry.area
     filtered_gdf = filtered_gdf.sort_values(by="area").reset_index(drop=True)

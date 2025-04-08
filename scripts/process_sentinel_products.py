@@ -38,7 +38,6 @@ def unzip_sentinel_products(base_dir):
     print(f"Checking Sentinel products in {base_dir}")
     zip_files = glob.glob(os.path.join(base_dir, "**/*.zip"), recursive=True)
     
-    failed_files = []
     for zip_path in zip_files:
         file_start_time = time.time()
         # Check if already unzipped
@@ -48,37 +47,16 @@ def unzip_sentinel_products(base_dir):
             continue
             
         print(f"Unzipping {zip_path} to {output_dir}")
-        try:
-            os.makedirs(output_dir, exist_ok=True)
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                first_dir = zip_ref.namelist()[0].split('/')[0]
-                zip_ref.extractall(output_dir)
-                nested_dir = os.path.join(output_dir, first_dir)
-                if os.path.exists(nested_dir) and os.path.isdir(nested_dir):
-                    for item in os.listdir(nested_dir):
-                        os.rename(os.path.join(nested_dir, item), os.path.join(output_dir, item))
-                    os.rmdir(nested_dir)
-            print(f"Unzipped {os.path.basename(zip_path)} in {time.time() - file_start_time:.2f} seconds")
-        except (zipfile.BadZipFile, zipfile.LargeZipFile) as e:
-            print(f"ERROR: Failed to unzip {zip_path}: {str(e)}")
-            failed_files.append(zip_path)
-            # Clean up the partially created directory if it exists
-            if os.path.exists(output_dir) and not os.listdir(output_dir):
-                os.rmdir(output_dir)
-            continue
-        except Exception as e:
-            print(f"ERROR: Unexpected error while unzipping {zip_path}: {str(e)}")
-            failed_files.append(zip_path)
-            # Clean up the partially created directory if it exists
-            if os.path.exists(output_dir) and not os.listdir(output_dir):
-                os.rmdir(output_dir)
-            continue
-    
-    if failed_files:
-        print("\nWARNING: The following files failed to unzip:")
-        for failed_file in failed_files:
-            print(f"- {failed_file}")
-        print("\nYou may want to check these files and re-download them if necessary.")
+        os.makedirs(output_dir, exist_ok=True)
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            first_dir = zip_ref.namelist()[0].split('/')[0]
+            zip_ref.extractall(output_dir)
+            nested_dir = os.path.join(output_dir, first_dir)
+            if os.path.exists(nested_dir) and os.path.isdir(nested_dir):
+                for item in os.listdir(nested_dir):
+                    os.rename(os.path.join(nested_dir, item), os.path.join(output_dir, item))
+                os.rmdir(nested_dir)
+        print(f"Unzipped {os.path.basename(zip_path)} in {time.time() - file_start_time:.2f} seconds")
     
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Unzip process completed in {time.time() - start_time:.2f} seconds")
     return output_dir
