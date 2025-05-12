@@ -1,0 +1,14 @@
+base_dir: ${hydra:runtime.cwd}/data
+overwrite: false
+sam_path: ".models/sam_vit_h_4b8939.pth"
+year: 2023
+sam:
+  model: "sam"
+  points_per_side: 64
+  points_per_batch: 192
+  pred_iou_thresh: 0.6
+  stability_score_thresh: 0.6
+  crop_nms_thresh: 0
+  crop_overlap_ratio: 1
+  crop_n_layers: 1
+  min_mask_region_area: 20
