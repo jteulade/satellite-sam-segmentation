@@ -56,28 +56,29 @@ The project provides scripts to process Sentinel satellite imagery:
 ```bash
 python scripts/process_sentinel_products.py base_dir="your_path_to_data"
 ```
-#### Key Arguments
 
-| Argument                   | Description                                                                 | Default                            | Example                                      |
-|----------------------------|-----------------------------------------------------------------------------|-------------------------------------|----------------------------------------------|
-| `base_dir` *(required)*    | Path to the directory containing the Sentinel product zip files.             | *(must be provided)*                | `base_dir="./data"`                          |
-| `overwrite`                | Boolean flag to overwrite existing files and directories.                   | `false`                             | `overwrite=true`                             |
-| `sam_path`                 | Path to the SAM model checkpoint file.                                      | `"models/sam_vit_h_4b8939.pth"`     | `sam_path="models/sam_vit_h_4b8939.pth"`     |
-| `year`                     | Year corresponding to the tiles being processed.                            | `2023`                              | `year=2023`                                  |
-| `not_into_console`         | Boolean flag to disable logging in the console.                             | `false`                             | `not_into_console=true`                     |
-| `in_file`                  | Boolean flag to enable logging to a file.                                   | `false`                             | `in_file=true`                               |
-| `sam.model`                | Model name used by SAM.                                                     | `"sam"`                             | `sam.model="sam"`                            |
-| `sam.points_per_side`      | Number of points sampled per image side.                                    | `64`                                | `sam.points_per_side=64`                     |
-| `sam.points_per_batch`     | Number of points processed per batch.                                       | `192`                               | `sam.points_per_batch=192`                   |
-| `sam.pred_iou_thresh`      | Prediction IoU threshold for mask filtering.                                | `0.6`                               | `sam.pred_iou_thresh=0.6`                    |
-| `sam.stability_score_thresh`| Threshold for the stability score.                                         | `0.6`                               | `sam.stability_score_thresh=0.6`             |
-| `sam.crop_nms_thresh`      | NMS threshold for cropping.                                                 | `0`                                 | `sam.crop_nms_thresh=0`                      |
-| `sam.crop_overlap_ratio`   | Overlap ratio between crops.                                                | `1`                                 | `sam.crop_overlap_ratio=1`                   |
-| `sam.crop_n_layers`        | Number of cropping layers.                                                  | `1`                                 | `sam.crop_n_layers=1`                        |
-| `sam.min_mask_region_area` | Minimum area of a mask region to be considered.                             | `20`                                | `sam.min_mask_region_area=20`                |
+### Key Arguments
 
+| Argument                     | Description                                                               | Default                          |
+|------------------------------|---------------------------------------------------------------------------|----------------------------------|
+| `base_dir`                   | Path to the directory containing the Sentinel product zip files.          | *Required*                       |
+| `overwrite`                  | Boolean flag to overwrite existing files and directories.                 | `false`                          |
+| `sam_path`                   | Path to the SAM model checkpoint file.                                    | `"models/sam_vit_h_4b8939.pth"`  |
+| `year`                       | Year corresponding to the tiles being processed.                          | `2023`                           |
+| `not_into_console`           | Boolean flag to disable logging in the console.                           | `false`                          |
+| `in_file`                    | Boolean flag to enable logging to a file.                                 | `false`                          |
+| `sam.model`                  | Model name used by SAM.                                                   | `"sam"`                          |
+| `sam.points_per_side`        | Number of points sampled per image side.                                  | `64`                             |
+| `sam.points_per_batch`       | Number of points processed per batch.                                     | `192`                            |
+| `sam.pred_iou_thresh`        | Prediction IoU threshold for mask filtering.                              | `0.6`                            |
+| `sam.stability_score_thresh` | Threshold for the stability score.                                        | `0.6`                            |
+| `sam.crop_nms_thresh`        | NMS threshold for cropping.                                               | `0`                              |
+| `sam.crop_overlap_ratio`     | Overlap ratio between crops.                                              | `1`                              |
+| `sam.crop_n_layers`          | Number of cropping layers.                                                | `1`                              |
+| `sam.min_mask_region_area`   | Minimum area of a mask region to be considered.                           | `20`                             |
 
 The script will:
+
 1. Unzip all Sentinel product zip files
 2. Preprocess the imagery
 3. Run SAM segmentation
