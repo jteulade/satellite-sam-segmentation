@@ -8,7 +8,7 @@ import logging
 from shapely.validation import make_valid  # Add this import
 import shutil
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("logger")
 
 def delete_files_in_directory(directory):
     """Supprime les fichiers dans un dossier """
@@ -53,6 +53,7 @@ def create_intersection_gdf(filtered_gdf):
     
     # Process polygons
     for i, row in tqdm(enumerate(filtered_gdf.iterrows()), total=len(filtered_gdf), desc="Processing Polygons"):
+        # Skip already processed polygons:
         if i in processed_indices:
             count_skipped += 1
             continue
@@ -98,11 +99,11 @@ def create_intersection_gdf(filtered_gdf):
     )
     
     # Print statistics
-    logging.info(f"\nStatistics:")
-    logging.info(f"- Polygons without significant intersection: {count_no_intersection}")
-    logging.info(f"- Polygons reduced to intersection (>25%): {count_intersection}")
-    logging.info(f"- Skipped polygons (already processed): {count_skipped}")
-    logging.info(f"- Remaining polygons: {len(intersection_gdf)}")
+    logger.info(f"Statistics:")
+    logger.info(f"- Polygons without significant intersection: {count_no_intersection}")
+    logger.info(f"- Polygons reduced to intersection (>25%): {count_intersection}")
+    logger.info(f"- Skipped polygons (already processed): {count_skipped}")
+    logger.info(f"- Remaining polygons: {len(intersection_gdf)}")
     
     return intersection_gdf
 
@@ -119,11 +120,11 @@ def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid
         min_pixels: Minimum number of pixels for a segment to be kept (default: 100)
     """
     tile_id = os.path.basename(tile_path)
-    logging.info(f"\nProcessing tile {tile_id} for quarters: {quarters}")
+    logger.info(f"Processing tile {tile_id} for quarters: {quarters}")
     pixel_area = get_pixel_area(tile_path, quarters, year)
     
     if pixel_area is None:
-        logging.info(f"Could not find B02.tif for tile {tile_id}")
+        logger.info(f"Could not find B02.tif for tile {tile_id}")
         return
     
     # Load quarterly parquet files with new path structure
@@ -139,7 +140,7 @@ def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid
             geodfs.append(gpd.read_parquet(quarter_path).to_crs("EPSG:32632"))
     
     if not geodfs:
-        logging.info(f"No parquet files found for tile {tile_id}")
+        logger.info(f"No parquet files found for tile {tile_id}")
         return
     
     # Concatenate GeoDataFrames
@@ -147,11 +148,11 @@ def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid
     
     # Fix invalid geometries
     combined_gdf['geometry'] = combined_gdf['geometry'].apply(lambda geom: make_valid(geom) if not geom.is_valid else geom)
-    logging.info(f"After merging, number of segments: {len(combined_gdf)}")
+    logger.info(f"After merging, number of segments: {len(combined_gdf)}")
     
     # Filter and process polygons
     filtered_gdf = combined_gdf[combined_gdf.geometry.area / pixel_area >= min_pixels]
-    logging.info(f"After removing segments smaller than {min_pixels} pixels, number of segments: {len(filtered_gdf)}")
+    logger.info(f"After removing segments smaller than {min_pixels} pixels, number of segments: {len(filtered_gdf)}")
     
     filtered_gdf["area"] = filtered_gdf.geometry.area
     filtered_gdf = filtered_gdf.sort_values(by="area").reset_index(drop=True)
@@ -178,15 +179,15 @@ def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="a
             try:
                 gdf = gpd.read_parquet(parquet_path)
                 gdfs.append(gdf)
-                logging.info(f"Loaded {parquet_path}: {len(gdf)} polygons")
+                logger.info(f"Loaded {parquet_path}: {len(gdf)} polygons")
             except Exception as e:
-                logging.error(f"Error loading {parquet_path}: {str(e)}")
+                logger.error(f"Error loading {parquet_path}: {str(e)}")
         else:
-            logging.info(f"No parquet file found for {parquet_path}")
+            logger.info(f"No parquet file found for {parquet_path}")
 
     if gdfs:
         combined_gdf = gpd.GeoDataFrame(pd.concat(gdfs, ignore_index=True))
-        logging.info(f"\nTotal number of polygons: {len(combined_gdf)}")
+        logger.info(f"Total number of polygons: {len(combined_gdf)}")
         
         # Create output directory in the same location as the input tiles
         output_dir = os.path.join(
@@ -199,6 +200,6 @@ def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="a
         combined_gdf.to_parquet(os.path.join(output_dir, f"{polygons_name}.parquet"))
         combined_gdf.to_file(os.path.join(output_dir, f"{polygons_name}.shp"))
         
-        logging.info(f"\nSaved merged files to {output_dir}")
+        logger.info(f"Saved merged files to {output_dir}")
     else:
-        logging.info("No data found to merge")
+        logger.info("No data found to merge")

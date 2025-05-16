@@ -8,8 +8,7 @@ import logging
 from src.polygon_merger import delete_files_in_directory
 
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
+logger = logging.getLogger("logger")
 
 def cumulative_count_cut(band, min_percentile=2, max_percentile=98):
     """Apply contrast enhancement stretch similar to QGIS"""
@@ -150,7 +149,7 @@ def build_color_from_JP2(jp2_path, color_type='nrg'):
         return output_path
         
     except Exception as e:
-        logging.error(f"Error processing JP2 file: {str(e)}")
+        logger.error(f"Error processing JP2 file: {str(e)}")
         return None
     
 def split_image_in_tiles(input_file, grid_size=10):
@@ -175,7 +174,7 @@ def split_image_in_tiles(input_file, grid_size=10):
         tile_height = height // grid_size
 
         total_tiles = grid_size * grid_size
-        logging.info(f"\nSplitting image into {total_tiles} tiles ({grid_size}x{grid_size} grid)")
+        logger.info(f"Splitting image into {total_tiles} tiles ({grid_size}x{grid_size} grid)")
         
         # Loop through each quadrant with progress bar
         with tqdm(total=total_tiles, desc="Splitting image", unit="tile") as pbar:
@@ -203,7 +202,7 @@ def split_image_in_tiles(input_file, grid_size=10):
                     
                     pbar.update(1)
 
-    logging.info(f"Splitting complete. Sub-images are saved in: {tiles_dir}")
+    logger.info(f"Splitting complete. Sub-images are saved in: {tiles_dir}")
 
 
 def preprocess_imagery(input_path, color_type='nrg'):
@@ -214,7 +213,7 @@ def preprocess_imagery(input_path, color_type='nrg'):
         input_path (str): Path to either Sentinel-2 directory or Pléiades JP2 file
         color_type (str): Either 'rgb' for true color or 'nrg' for NIR-Red-Green
     """
-    logging.info(f"Processing {input_path}")
+    logger.info(f"Processing {input_path}")
     
     try:
         if input_path.endswith('.JP2'):
@@ -222,9 +221,9 @@ def preprocess_imagery(input_path, color_type='nrg'):
         else:
             composite_path = build_rgb_from_sentinel(input_path, color_type)
 
-        logging.info(f"Finish color composite build")
+        logger.info(f"Finish color composite build")
         split_image_in_tiles(composite_path)
-        logging.info(f"Successfully processed {input_path}")
+        logger.info(f"Successfully processed {input_path}")
         
     except Exception as e:
-        logging.error(f"Error processing {input_path}: {str(e)}")
+        logger.error(f"Error processing {input_path}: {str(e)}")
