@@ -13,7 +13,7 @@ logger = logging.getLogger("logger")
 def delete_files_in_directory(directory):
     """Supprime les fichiers dans un dossier """
     if os.path.exists(directory):
-        logging.info(f"Deleting files in {directory} ...")
+        logger.info(f"Deleting files in {directory} ...")
         shutil.rmtree(directory)
 
 def get_pixel_area(tile_path, quarters, year):
