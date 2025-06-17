@@ -54,19 +54,18 @@ The project provides scripts to process Sentinel satellite imagery:
 2. Run the processing script:
 
 ```bash
-python scripts/process_sentinel_products.py base_dir="your_path_to_data"
+python scripts/process_sentinel_products.py base-dir="your_path_to_data"
 ```
 
 ### Key Arguments
 
 | Argument                     | Description                                                               | Default                          |
 |------------------------------|---------------------------------------------------------------------------|----------------------------------|
-| `base_dir`                   | Path to the directory containing the Sentinel product zip files.          | *Required*                       |
+| `base-dir`                   | Path to the directory containing the Sentinel product zip files.          | *Required*                       |
 | `overwrite`                  | Boolean flag to overwrite existing files and directories.                 | `false`                          |
-| `sam_path`                   | Path to the SAM model checkpoint file.                                    | `"models/sam_vit_h_4b8939.pth"`  |
+| `sam-model-path`             | Path to the SAM model checkpoint file.                                    | `"models/sam_vit_h_4b8939.pth"`  |
 | `year`                       | Year corresponding to the tiles being processed.                          | `2023`                           |
-| `not_into_console`           | Boolean flag to disable logging in the console.                           | `false`                          |
-| `in_file`                    | Boolean flag to enable logging to a file.                                 | `false`                          |
+| `in-file`                    | Boolean flag to enable logging to a file.                                 | `false`                          |
 | `sam.model`                  | Model name used by SAM.                                                   | `"sam"`                          |
 | `sam.points_per_side`        | Number of points sampled per image side.                                  | `64`                             |
 | `sam.points_per_batch`       | Number of points processed per batch.                                     | `192`                            |
@@ -253,6 +252,7 @@ CUDA out of memory. Tried to allocate 1024.00 MiB. GPU 0 has a total capacity of
 ```
 
 #### Reduce the workload:
+
 
 You can **reduce the memory usage** of the SAM (Segment Anything Model) by decreasing the `points_per_side` parameter. Lowering this value reduces the number of input points, which in turn decreases the memory required for processing.
 

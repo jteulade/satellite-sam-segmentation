@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 
-def configure_logger(name="logger", is_file=False):
+def configure_logger(name="logger", in_file=False):
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
 
@@ -13,7 +13,7 @@ def configure_logger(name="logger", is_file=False):
 
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-    if is_file:
+    if in_file:
         os.makedirs('logs', exist_ok=True)
         log_filename = datetime.strftime(datetime.now(), 'logs/logs_%Y%m%d_%H%M%S.log')
         file_handler = logging.FileHandler(log_filename)
